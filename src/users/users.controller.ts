@@ -1,5 +1,6 @@
 import { Controller, Get, Param, Post } from '@nestjs/common';
 import { BossRaidHistory } from 'src/boss-raid-history/entities/boss-raid-history.entity';
+import { User } from './entities/user.entity';
 import { UsersService } from './users.service';
 
 @Controller('user')
@@ -26,10 +27,14 @@ export class UsersController {
   async findOne(
     @Param('userId') userId: number,
   ): Promise<{ totalScore: number; bossRaidHistory: BossRaidHistory[] }> {
-    const findUser = await this.usersService.findOne(userId);
-    // @Todo: 보스레이드 관련 API 구현 후 총 점수 재설정 필요
+    const findUser: User = await this.usersService.findOne(userId);
+
+    const bossRaidHistories: BossRaidHistory[] = findUser.bossRaidHistories;
+    let totalScore = 0;
+    bossRaidHistories.forEach((history) => (totalScore += history.score));
+
     return {
-      totalScore: 0,
+      totalScore,
       bossRaidHistory: findUser.bossRaidHistories || [],
     };
   }

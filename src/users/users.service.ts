@@ -29,6 +29,7 @@ export class UsersService {
   async findOne(userId: number): Promise<User> {
     const userEntity: User = await this.usersRepository.findOne({
       where: { id: userId, isDeleted: false },
+      relations: ['bossRaidHistories'],
     });
 
     if (!userEntity) {
