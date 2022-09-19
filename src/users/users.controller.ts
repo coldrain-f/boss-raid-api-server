@@ -1,4 +1,4 @@
-import { Controller, Get, Logger, Param, Post } from '@nestjs/common';
+import { Controller, Get, Param, Post } from '@nestjs/common';
 import { BossRaidHistory } from 'src/boss-raid-history/entities/boss-raid-history.entity';
 import { UsersService } from './users.service';
 
