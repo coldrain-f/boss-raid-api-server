@@ -1,7 +1,9 @@
+import { BossRaidHistory } from 'src/boss-raid-history/entities/boss-raid-history.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -21,4 +23,10 @@ export class User {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @OneToMany(
+    () => BossRaidHistory,
+    (bossRaidHistory) => bossRaidHistory.enteredUser,
+  )
+  bossRaidHistories: BossRaidHistory[];
 }
