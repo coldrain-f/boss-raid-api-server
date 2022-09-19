@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import * as Joi from 'joi';
 import { DatabaseModule } from './database/database.module';
 import { UsersModule } from './users/users.module';
+import { BossRaidHistoryModule } from './boss-raid-history/boss-raid-history.module';
 import * as redisStore from 'cache-manager-ioredis';
 
 @Module({
@@ -30,6 +31,7 @@ import * as redisStore from 'cache-manager-ioredis';
     }),
     DatabaseModule,
     UsersModule,
+    BossRaidHistoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],
