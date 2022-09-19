@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -19,5 +19,22 @@ export class UsersService {
     return {
       userId: savedUser.id,
     };
+  }
+
+  /**
+   * 유저 조회
+   * @param userId 조회하고자 하는 유저의 아이디 값(PK)
+   * @returns 조회한 사용자 Entity
+   */
+  async findOne(userId: number): Promise<User> {
+    const userEntity: User = await this.usersRepository.findOne({
+      where: { id: userId, isDeleted: false },
+    });
+
+    if (!userEntity) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    return userEntity;
   }
 }
