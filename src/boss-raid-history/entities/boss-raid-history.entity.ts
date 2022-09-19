@@ -1,22 +1,28 @@
 import { User } from 'src/users/entities/user.entity';
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity()
 export class BossRaidHistory {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ default: 0 })
   score: number;
 
-  @Column()
+  @CreateDateColumn()
   enterTime: Date;
 
-  @Column()
+  @Column({ nullable: true })
   endTime: Date;
 
   @Column()
-  level: string;
+  level: number;
 
   @ManyToOne(() => User, (user) => user.bossRaidHistories)
   enteredUser: User;

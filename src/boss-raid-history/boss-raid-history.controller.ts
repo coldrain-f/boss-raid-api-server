@@ -1,5 +1,6 @@
-import { Controller, Get } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { BossRaidHistoryService } from './boss-raid-history.service';
+import { EnterBossRaidDTO } from './dto/enter-boss-raid-dto';
 
 @Controller('bossRaid')
 export class BossRaidHistoryController {
@@ -17,5 +18,16 @@ export class BossRaidHistoryController {
     enteredUserId: number;
   }> {
     return await this.bossRaidHistoryService.findBossRaidStatus();
+  }
+
+  /**
+   * 보스레이드 시작 API
+   */
+  @Post('enter')
+  async enterBossRaid(
+    @Body() request: EnterBossRaidDTO,
+  ): Promise<{ isEntered: boolean; raidRecordId: number }> {
+    const { userId, level } = request;
+    return await this.bossRaidHistoryService.enter(userId, level);
   }
 }
