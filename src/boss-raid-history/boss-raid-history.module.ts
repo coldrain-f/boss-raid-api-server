@@ -7,6 +7,8 @@ import { BossRaidHistory } from './entities/boss-raid-history.entity';
 import { UsersModule } from 'src/users/users.module';
 import Redis from 'ioredis';
 import { RedlockModule } from '@anchan828/nest-redlock';
+import { HttpModule } from '@nestjs/axios';
+import { BossRaidModule } from 'src/boss-raid/boss-raid.module';
 
 @Module({
   imports: [
@@ -28,8 +30,10 @@ import { RedlockModule } from '@anchan828/nest-redlock';
       host: '127.0.0.1',
       port: 6379,
     }),
+    HttpModule,
     TypeOrmModule.forFeature([BossRaidHistory]),
     UsersModule,
+    BossRaidModule,
   ],
   controllers: [BossRaidHistoryController],
   providers: [BossRaidHistoryService],
