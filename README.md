@@ -28,7 +28,7 @@
 <br>
 
 ## 🔀 ERD(Entity Relationship Diagram)
-추가 필요
+![image](https://user-images.githubusercontent.com/81298415/191271131-d680fafd-840a-4bf6-a340-defe0fd32c06.png)
 
 ## ✨ 프로젝트 구조
 ```
