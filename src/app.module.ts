@@ -24,6 +24,7 @@ import * as redisStore from 'cache-manager-ioredis';
         JWT_SECRET_KEY: Joi.string().default('secret'),
       }),
     }),
+
     CacheModule.register({
       store: redisStore,
       host: '127.0.0.1',

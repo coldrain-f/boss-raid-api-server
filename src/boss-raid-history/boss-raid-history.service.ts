@@ -1,3 +1,4 @@
+import { RedlockService } from '@anchan828/nest-redlock';
 import {
   CACHE_MANAGER,
   HttpException,
@@ -7,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cache } from 'cache-manager';
+import Redlock, { Lock } from 'redlock';
 import { UsersService } from 'src/users/users.service';
 import { Repository } from 'typeorm';
 import { BossRaidHistory } from './entities/boss-raid-history.entity';
@@ -18,6 +20,7 @@ export class BossRaidHistoryService {
     @InjectRepository(BossRaidHistory)
     private readonly bossRaidHistoriesRepository: Repository<BossRaidHistory>,
     private readonly usersService: UsersService,
+    private readonly redlock: RedlockService,
   ) {}
 
   /**
@@ -31,6 +34,7 @@ export class BossRaidHistoryService {
     // Redis에서 canEnter 값을 가지고 온다.
     // 값이 없으면 입장 내역이 없는 것이므로 입장 가능으로 처리한다.
     let canEnter = await this.cacheManager.get<boolean>('canEnter');
+
     if (canEnter === null) {
       canEnter = true;
     }
@@ -52,9 +56,15 @@ export class BossRaidHistoryService {
     userId: number,
     level: number,
   ): Promise<{ isEntered: boolean; raidRecordId: number }> {
+    // Todo: 앱이 로딩될 때 필요한 Redis 캐시 데이터 초기화 하기
     await this.initCanEnterData();
 
-    const canEnter = await this.cacheManager.get<boolean>('canEnter');
+    // lock을 걸었으므로 다른 사용자는 이곳에서 unlock 전까지 대기한다.
+    const lock = await this.redlock.acquire(['lock'], 3000);
+
+    const canEnter: boolean = await this.cacheManager.get('canEnter');
+
+    await this.cacheManager.get<boolean>('key');
 
     if (!canEnter) {
       throw new HttpException(
@@ -73,6 +83,9 @@ export class BossRaidHistoryService {
     );
 
     await this.cacheManager.set('canEnter', false, { ttl: 0 });
+
+    // unlock
+    await lock.release();
 
     return {
       isEntered: true,
