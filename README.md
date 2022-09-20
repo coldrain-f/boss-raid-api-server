@@ -54,7 +54,7 @@
   ( node-redlock을 사용하여 redis lock을 걸어서 동시성 고려하도록 구현)
 - 레이드 시작이 가능하다면 중복되지 않은 raidRecordId를 생성하여
 
-isEntered:true와 함께 응답
+  isEntered:true와 함께 응답
 - 레이드 시작이 불가하다면 isEntered: false 반환
 
 ##### 보스레이드 종료
