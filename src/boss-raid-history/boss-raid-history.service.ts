@@ -1,14 +1,18 @@
 import { RedlockService } from '@anchan828/nest-redlock';
+import { HttpService } from '@nestjs/axios';
 import {
+  BadRequestException,
   CACHE_MANAGER,
   HttpException,
   HttpStatus,
   Inject,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cache } from 'cache-manager';
 import Redlock, { Lock } from 'redlock';
+import { BossRaidService } from 'src/boss-raid/boss-raid.service';
 import { UsersService } from 'src/users/users.service';
 import { Repository } from 'typeorm';
 import { BossRaidHistory } from './entities/boss-raid-history.entity';
@@ -21,6 +25,7 @@ export class BossRaidHistoryService {
     private readonly bossRaidHistoriesRepository: Repository<BossRaidHistory>,
     private readonly usersService: UsersService,
     private readonly redlock: RedlockService,
+    private readonly bossRaidService: BossRaidService,
   ) {}
 
   /**
@@ -91,6 +96,67 @@ export class BossRaidHistoryService {
       isEntered: true,
       raidRecordId: savedBossRaidHistory.id,
     };
+  }
+
+  /**
+   * 보스레이드 종료
+   */
+  async end(userId: number, raidRecordId: number) {
+    // Todo: raidRecordId로 bossRaidHistory를 하나 가지고 온다.
+    const bossRaidHistory = await this.findOne(raidRecordId);
+
+    // Todo: 저장된 userId와 raidRecordId가 일치하지 않다면 예외 처리
+    if (bossRaidHistory.enteredUser.id !== userId) {
+      throw new BadRequestException('일치하지 않는 유저입니다.');
+    }
+    if (bossRaidHistory.id !== raidRecordId) {
+      throw new BadRequestException('일치하지 않은 보스 레이드 기록입니다.');
+    }
+
+    // Todo: 시작한 시간으로부터 레이드 제한시간이 지났다면 예외 처리
+    // 만약 9:52에 시작했고 보스 종료를 9:55분에 했다면 exception
+    // 시작 시간 + bossRaidLimitSeconds  > 현재 시간 = Exception
+    const { enterTime } = bossRaidHistory;
+    const bossRaidLimitSeconds: number =
+      await this.bossRaidService.getBossRaidLimitSeconds();
+
+    const enterSeconds =
+      enterTime.getHours() * 3600 +
+      enterTime.getMinutes() * 60 +
+      enterTime.getSeconds();
+
+    const currentSeconds =
+      new Date().getHours() * 3600 +
+      new Date().getMinutes() * 60 +
+      new Date().getSeconds();
+
+    // Todo: 시간 계산이 잘 되는지 검증 필요
+    if (enterSeconds + bossRaidLimitSeconds > currentSeconds) {
+      throw new BadRequestException('입장 시간에서 3분이 지났습니다.');
+    }
+
+    // Todo: 가져온 bossRaidHistory를 갱신한다.
+    // 레이드 level에 따른 score 반영
+    // endTime 갱신
+    const level = bossRaidHistory.level;
+    const score: number = await this.bossRaidService.getBossRaidScore(level);
+    bossRaidHistory.score = score;
+    bossRaidHistory.endTime = new Date();
+
+    await this.bossRaidHistoriesRepository.save(bossRaidHistory);
+
+    // Todo: Redis에서 랭킹 갱신
+  }
+
+  async findOne(raidRecordId: number): Promise<BossRaidHistory> {
+    const bossRaidHistory = await this.bossRaidHistoriesRepository.findOne({
+      where: { id: raidRecordId },
+      relations: ['enteredUser'],
+    });
+    if (!bossRaidHistory) {
+      throw new NotFoundException('보스 레이드 기록을 찾을 수 없습니다.');
+    }
+    return bossRaidHistory;
   }
 
   /**
