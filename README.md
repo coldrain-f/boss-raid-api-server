@@ -76,7 +76,9 @@
 <br>
 
 ## 🛰️ API 명세서
-추가 필요
+**포스트맨 API 문서**
+
+https://documenter.getpostman.com/view/15230748/2s7Z7Wqb6x
 
 <br>
 
