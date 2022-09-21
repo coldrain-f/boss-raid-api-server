@@ -1,9 +1,6 @@
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import Redis from 'ioredis';
-import { BossRaidHistoryService } from 'src/boss-raid-history/boss-raid-history.service';
-import { BossRaidHistory } from 'src/boss-raid-history/entities/boss-raid-history.entity';
-import { UsersService } from 'src/users/users.service';
 
 export interface RankingInfo {
   ranking: number;

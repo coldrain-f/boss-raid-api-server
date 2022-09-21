@@ -32,7 +32,7 @@ import { RankModule } from 'src/rank/rank.module';
       port: 6379,
     }),
     TypeOrmModule.forFeature([BossRaidHistory]),
-    forwardRef(() => RankModule),
+    RankModule,
     HttpModule,
     UsersModule,
     BossRaidModule,

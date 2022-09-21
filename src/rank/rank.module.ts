@@ -14,7 +14,6 @@ import { RankService } from './rank.service';
         port: 6379,
       },
     }),
-    forwardRef(() => BossRaidHistoryModule),
     UsersModule,
   ],
   providers: [RankService],
