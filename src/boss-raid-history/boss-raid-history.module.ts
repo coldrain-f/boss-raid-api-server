@@ -9,6 +9,7 @@ import Redis from 'ioredis';
 import { RedlockModule } from '@anchan828/nest-redlock';
 import { HttpModule } from '@nestjs/axios';
 import { BossRaidModule } from 'src/boss-raid/boss-raid.module';
+import { RankModule } from 'src/rank/rank.module';
 
 @Module({
   imports: [
@@ -30,8 +31,9 @@ import { BossRaidModule } from 'src/boss-raid/boss-raid.module';
       host: '127.0.0.1',
       port: 6379,
     }),
-    HttpModule,
     TypeOrmModule.forFeature([BossRaidHistory]),
+    RankModule,
+    HttpModule,
     UsersModule,
     BossRaidModule,
   ],

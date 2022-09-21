@@ -7,6 +7,7 @@ import { DatabaseModule } from './database/database.module';
 import { UsersModule } from './users/users.module';
 import { BossRaidHistoryModule } from './boss-raid-history/boss-raid-history.module';
 import { BossRaidModule } from './boss-raid/boss-raid.module';
+import { RankModule } from './rank/rank.module';
 import * as redisStore from 'cache-manager-ioredis';
 
 @Module({
@@ -35,6 +36,7 @@ import * as redisStore from 'cache-manager-ioredis';
     UsersModule,
     BossRaidHistoryModule,
     BossRaidModule,
+    RankModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -11,6 +11,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cache } from 'cache-manager';
 import { BossRaidService } from 'src/boss-raid/boss-raid.service';
+import { RankService } from 'src/rank/rank.service';
 import { UsersService } from 'src/users/users.service';
 import { Repository } from 'typeorm';
 import { BossRaidHistory } from './entities/boss-raid-history.entity';
@@ -29,6 +30,7 @@ export class BossRaidHistoryService {
     private readonly usersService: UsersService,
     private readonly redlock: RedlockService,
     private readonly bossRaidService: BossRaidService,
+    private readonly rankService: RankService,
   ) {
     // 싱글톤 객체 생성 시 필요한 Redis 캐시 데이터 초기화
     this.initBossRaidCacheData();
