@@ -52,11 +52,11 @@ export class BossRaidHistoryService {
     // lock을 걸었으므로 다른 사용자는 이곳에서 unlock 전까지 대기한다.
     const lock = await this.redlock.acquire(['lock'], 3000);
 
-    const canEnter: boolean = await this.cacheManager.get('canEnter');
+    const bossRaidStatus: BossRaidStatusInfo = await this.cacheManager.get(
+      'bossRaidStatus',
+    );
 
-    await this.cacheManager.get<boolean>('key');
-
-    if (!canEnter) {
+    if (!bossRaidStatus.canEnter) {
       await lock.release();
       throw new HttpException(
         {
@@ -68,21 +68,19 @@ export class BossRaidHistoryService {
       );
     }
 
-    // Todo: Redis에서 enteredUserId 갱신
+    const savedRaidRecord = await this.createBossRaidHistory(userId, level);
 
-    const savedBossRaidHistory = await this.createBossRaidHistory(
-      userId,
-      level,
+    // Todo: Redis에서 canEnter와 enteredUserId를 갱신
+    await this.cacheManager.set(
+      'bossRaidStatus',
+      { canEnter: false, enteredUserId: userId },
+      { ttl: 0 },
     );
-
-    await this.cacheManager.set('canEnter', false, { ttl: 0 });
-
-    // unlock
     await lock.release();
 
     return {
       isEntered: true,
-      raidRecordId: savedBossRaidHistory.id,
+      raidRecordId: savedRaidRecord.id,
     };
   }
 
@@ -117,8 +115,12 @@ export class BossRaidHistoryService {
 
     await this.bossRaidHistoriesRepository.save(bossRaidHistory);
 
-    // Todo: canEnter 값을 true로 변경해야 한다.
-    this.cacheManager.set('canEnter', true, { ttl: 0 });
+    // Todo: canEnter 값을 true로 변경하고 enteredUserId를 null로 변경한다.
+    await this.cacheManager.set(
+      'bossRaidStatus',
+      { canEnter: true, enteredUserId: null },
+      { ttl: 0 },
+    );
 
     // Todo: Redis에서 랭킹 갱신
   }
