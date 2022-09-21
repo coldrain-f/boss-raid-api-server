@@ -15,6 +15,11 @@ import { UsersService } from 'src/users/users.service';
 import { Repository } from 'typeorm';
 import { BossRaidHistory } from './entities/boss-raid-history.entity';
 
+export interface BossRaidStatusInfo {
+  canEnter: boolean;
+  enteredUserId: number;
+}
+
 @Injectable()
 export class BossRaidHistoryService {
   constructor(
@@ -26,24 +31,15 @@ export class BossRaidHistoryService {
     private readonly bossRaidService: BossRaidService,
   ) {
     // 앱이 로딩될 때 필요한 Redis 캐시 데이터 초기화
-    this.initCanEnterData();
+    this.initBossRaidCacheData();
   }
 
   /**
    * 보스레이드 상태 조회
    * @returns 입장 가능 여부와 입장한 유저의 아이디 값
    */
-  async findBossRaidStatus(): Promise<{
-    canEnter: boolean;
-    enteredUserId: number;
-  }> {
-    const canEnter = await this.cacheManager.get<boolean>('canEnter');
-    const enteredUserId = await this.cacheManager.get<number>('enteredUserId');
-
-    return {
-      canEnter: canEnter,
-      enteredUserId,
-    };
+  async findBossRaidStatus(): Promise<BossRaidStatusInfo> {
+    return await this.cacheManager.get('bossRaidStatus');
   }
 
   /**
@@ -142,10 +138,16 @@ export class BossRaidHistoryService {
    * 입장 가능여부 Redis 데이터 초기화
    * Redis에 canEnter 값이 설정되어 있지 않다면 값 설정 및 초기화
    */
-  private async initCanEnterData(): Promise<void> {
-    const canEnter = await this.cacheManager.get<boolean>('canEnter');
-    if (canEnter === null) {
-      await this.cacheManager.set('canEnter', true, { ttl: 0 });
+  private async initBossRaidCacheData(): Promise<void> {
+    const bossRaidStatus: BossRaidStatusInfo = await this.cacheManager.get(
+      'bossRaidStatus',
+    );
+    if (!bossRaidStatus) {
+      await this.cacheManager.set(
+        'bossRaidStatus',
+        { canEnter: true, enteredUserId: null },
+        { ttl: 0 },
+      );
     }
   }
 
