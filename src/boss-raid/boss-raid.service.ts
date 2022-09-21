@@ -66,7 +66,7 @@ export class BossRaidService {
       'https://dmpilf5svl7rv.cloudfront.net/assignment/backend/bossRaidData.json';
 
     const response = await this.httpService.axiosRef.get(BOSS_RAID_DATA_URL);
-    const bossRaidInfo: BossRaidInfo = response.data.bossRaid[0];
+    const bossRaidInfo: BossRaidInfo = response.data.bossRaids[0];
 
     // Todo: Redis에 staticData 캐싱
     await this.cacheManager.set('bossRaidInfo', bossRaidInfo, { ttl: 0 });
