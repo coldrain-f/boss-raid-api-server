@@ -13,27 +13,39 @@ export interface RankingInfo {
 
 @Injectable()
 export class RankService {
-  constructor(
-    @InjectRedis() private readonly redis: Redis,
-    private readonly bossRaidHistoryService: BossRaidHistoryService,
-    private readonly usersService: UsersService,
-  ) {}
+  constructor(@InjectRedis() private readonly redis: Redis) {}
 
   /**
    * 랭킹 패치
    * 순서대로 Sorted Set의 이름, 점수(score), 키(key)
    */
-  async fetchRanking(totalScore: number, userId: number) {
+  async fetchRanking(totalScore: number, userId: number): Promise<void> {
     await this.redis.zadd('rank', totalScore, userId);
   }
 
   /**
-   * 모든 랭킹 조회
+   * 탑 랭킹 조회 (1등부터 10등까지)
    */
-  getAllRanking() {}
+  async getAllRanking(): Promise<RankingInfo[]> {
+    const ranking: string[] = await this.redis.zrevrange('rank', 0, 9);
+    const rankingInfoList: RankingInfo[] = [];
+
+    ranking.forEach(async (userId, rank) =>
+      rankingInfoList.push({
+        ranking: rank,
+        userId: parseInt(userId),
+        totalScore: parseInt(await this.redis.zscore('rank', userId)),
+      }),
+    );
+    return rankingInfoList;
+  }
 
   /**
    * 나의 랭킹 조회
    */
-  getMyRanking(userId: number) {}
+  async getMyRanking(userId: number): Promise<RankingInfo> {
+    const totalScore = parseInt(await this.redis.zscore('rank', userId));
+    const ranking = await this.redis.zrank('rank', userId.toString());
+    return { ranking, userId, totalScore };
+  }
 }
