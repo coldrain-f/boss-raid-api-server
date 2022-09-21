@@ -11,7 +11,9 @@ describe('BossRaidHistoryController', () => {
       providers: [BossRaidHistoryService],
     }).compile();
 
-    controller = module.get<BossRaidHistoryController>(BossRaidHistoryController);
+    controller = module.get<BossRaidHistoryController>(
+      BossRaidHistoryController,
+    );
   });
 
   it('should be defined', () => {

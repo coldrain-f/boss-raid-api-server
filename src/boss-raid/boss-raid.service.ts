@@ -1,5 +1,10 @@
 import { HttpService } from '@nestjs/axios';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  CACHE_MANAGER,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { Cache } from 'cache-manager';
 
 export interface BossRaidInfo {
@@ -11,7 +16,7 @@ export interface BossRaidInfo {
 export class BossRaidService {
   constructor(
     private readonly httpService: HttpService,
-    private readonly cacheManager: Cache,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {
     // 싱글톤 객체 생성 시 필요한 Redis 캐시 데이터 초기화
     this.initBossRaidStaticDataCaching();
