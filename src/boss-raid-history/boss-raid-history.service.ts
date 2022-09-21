@@ -1,5 +1,4 @@
 import { RedlockService } from '@anchan828/nest-redlock';
-import { HttpService } from '@nestjs/axios';
 import {
   BadRequestException,
   CACHE_MANAGER,
@@ -11,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cache } from 'cache-manager';
-import Redlock, { Lock } from 'redlock';
 import { BossRaidService } from 'src/boss-raid/boss-raid.service';
 import { UsersService } from 'src/users/users.service';
 import { Repository } from 'typeorm';
@@ -26,7 +24,10 @@ export class BossRaidHistoryService {
     private readonly usersService: UsersService,
     private readonly redlock: RedlockService,
     private readonly bossRaidService: BossRaidService,
-  ) {}
+  ) {
+    // 앱이 로딩될 때 필요한 Redis 캐시 데이터 초기화
+    this.initCanEnterData();
+  }
 
   /**
    * 보스레이드 상태 조회
@@ -36,16 +37,7 @@ export class BossRaidHistoryService {
     canEnter: boolean;
     enteredUserId: number;
   }> {
-    // Redis에서 canEnter 값을 가지고 온다.
-    // 값이 없으면 입장 내역이 없는 것이므로 입장 가능으로 처리한다.
-    let canEnter = await this.cacheManager.get<boolean>('canEnter');
-
-    if (canEnter === null) {
-      canEnter = true;
-    }
-
-    // Redis에서 현재 입장중인 유저의 아이디 값을 가지고 온다.
-    // 값이 없으면 입장한 사용자가 없는 것이므로 null로 처리한다.
+    const canEnter = await this.cacheManager.get<boolean>('canEnter');
     const enteredUserId = await this.cacheManager.get<number>('enteredUserId');
 
     return {
@@ -61,9 +53,6 @@ export class BossRaidHistoryService {
     userId: number,
     level: number,
   ): Promise<{ isEntered: boolean; raidRecordId: number }> {
-    // Todo: 앱이 로딩될 때 필요한 Redis 캐시 데이터 초기화 하기
-    await this.initCanEnterData();
-
     // lock을 걸었으므로 다른 사용자는 이곳에서 unlock 전까지 대기한다.
     const lock = await this.redlock.acquire(['lock'], 3000);
 
@@ -72,6 +61,7 @@ export class BossRaidHistoryService {
     await this.cacheManager.get<boolean>('key');
 
     if (!canEnter) {
+      await lock.release();
       throw new HttpException(
         {
           statusCode: HttpStatus.BAD_REQUEST,
@@ -81,6 +71,8 @@ export class BossRaidHistoryService {
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    // Todo: Redis에서 enteredUserId 갱신
 
     const savedBossRaidHistory = await this.createBossRaidHistory(
       userId,
@@ -102,48 +94,35 @@ export class BossRaidHistoryService {
    * 보스레이드 종료
    */
   async end(userId: number, raidRecordId: number) {
-    // Todo: raidRecordId로 bossRaidHistory를 하나 가지고 온다.
     const bossRaidHistory = await this.findOne(raidRecordId);
 
-    // Todo: 저장된 userId와 raidRecordId가 일치하지 않다면 예외 처리
     if (bossRaidHistory.enteredUser.id !== userId) {
       throw new BadRequestException('일치하지 않는 유저입니다.');
     }
     if (bossRaidHistory.id !== raidRecordId) {
       throw new BadRequestException('일치하지 않은 보스 레이드 기록입니다.');
     }
+    if (bossRaidHistory.endTime) {
+      throw new BadRequestException('이미 종료된 보스 레이드입니다.');
+    }
 
     // Todo: 시작한 시간으로부터 레이드 제한시간이 지났다면 예외 처리
-    // 만약 9:52에 시작했고 보스 종료를 9:55분에 했다면 exception
-    // 시작 시간 + bossRaidLimitSeconds  > 현재 시간 = Exception
-    const { enterTime } = bossRaidHistory;
-    const bossRaidLimitSeconds: number =
-      await this.bossRaidService.getBossRaidLimitSeconds();
-
-    const enterSeconds =
-      enterTime.getHours() * 3600 +
-      enterTime.getMinutes() * 60 +
-      enterTime.getSeconds();
-
-    const currentSeconds =
-      new Date().getHours() * 3600 +
-      new Date().getMinutes() * 60 +
-      new Date().getSeconds();
-
-    // Todo: 시간 계산이 잘 되는지 검증 필요
-    if (enterSeconds + bossRaidLimitSeconds > currentSeconds) {
-      throw new BadRequestException('입장 시간에서 3분이 지났습니다.');
+    const isGameTimeout = await this.isGameTimeout(bossRaidHistory);
+    if (isGameTimeout) {
+      throw new BadRequestException('보스레이드 제한 시간이 경과되었습니다.');
     }
 
     // Todo: 가져온 bossRaidHistory를 갱신한다.
-    // 레이드 level에 따른 score 반영
-    // endTime 갱신
-    const level = bossRaidHistory.level;
-    const score: number = await this.bossRaidService.getBossRaidScore(level);
+    const score: number = await this.bossRaidService.getBossRaidScore(
+      bossRaidHistory.level,
+    );
     bossRaidHistory.score = score;
     bossRaidHistory.endTime = new Date();
 
     await this.bossRaidHistoriesRepository.save(bossRaidHistory);
+
+    // Todo: canEnter 값을 true로 변경해야 한다.
+    this.cacheManager.set('canEnter', true, { ttl: 0 });
 
     // Todo: Redis에서 랭킹 갱신
   }
@@ -184,5 +163,33 @@ export class BossRaidHistoryService {
       bossRaidHistory,
     );
     return savedBossRaidHistory;
+  }
+
+  /**
+   * 보스레이드 시작 시간으로부터 제한시간이 경과했는지 확인한다.
+   */
+  private async isGameTimeout(bossRaidHistory: BossRaidHistory) {
+    const { enterTime } = bossRaidHistory;
+    const bossRaidLimitSeconds: number =
+      await this.bossRaidService.getBossRaidLimitSeconds();
+
+    const enterSeconds = this.toSeconds(enterTime);
+    const currentSeconds = this.toSeconds(new Date());
+    const gameTotalSeconds = enterSeconds + bossRaidLimitSeconds;
+
+    if (gameTotalSeconds > currentSeconds) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Date의 시,분,초를 초로 변환해서 더하여 반환한다.
+   */
+  private toSeconds(date: Date): number {
+    let seconds = date.getHours() * 3600;
+    seconds += date.getMinutes() * 60;
+    seconds += date.getSeconds();
+    return seconds;
   }
 }
