@@ -1,8 +1,12 @@
 import { HttpService } from '@nestjs/axios';
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { firstValueFrom } from 'rxjs';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
 
-class BossRaidInfo {
+export interface BossRaidInfo {
   bossRaids: [
     bossRaidLimitSeconds: number,
     levels: { level: number; score: number }[],
@@ -22,20 +26,27 @@ export class BossRaidService {
   }
 
   async getBossRaidScore(level: number) {
-    if (level < 0 || level > 3) {
-      throw new HttpException(
-        '존재하지 않는 레벨입니다.',
-        HttpStatus.BAD_REQUEST,
-      );
+    if (!this.existBossRaidLevel) {
+      throw new BadRequestException('존재하지 않는 레벨입니다.');
     }
     const response = await this.fetchBossRaidCachingData();
     const staticData = response.data.bossRaids[0];
     return staticData.levels[level].score;
   }
 
+  /**
+   * 게임 제한시간 seconds로 반환
+   */
   async getBossRaidLimitSeconds() {
     const response = await this.fetchBossRaidCachingData();
     const staticData = response.data.bossRaid[0];
     return staticData.bossRaidLimitSeconds;
+  }
+
+  private existBossRaidLevel(level: number): boolean {
+    if (level < 0 || level > 3) {
+      return false;
+    }
+    return true;
   }
 }
