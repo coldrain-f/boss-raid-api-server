@@ -6,7 +6,6 @@ import {
   HttpStatus,
   Inject,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -105,7 +104,16 @@ export class BossRaidHistoryService {
     const isGameTimeout = await this.isGameTimeout(bossRaidHistory);
     if (isGameTimeout) {
       // Todo: 어쨌든 다음 유저는 보스레이드를 시작할 수 있어야 하므로 레이드 상태변경을 한다.
-      throw new BadRequestException('보스레이드 제한 시간이 경과되었습니다.');
+      await this.cacheManager.set(
+        'bossRaidStatus',
+        { canEnter: true, enteredUserId: null },
+        { ttl: 0 },
+      );
+      bossRaidHistory.endTime = new Date();
+      await this.bossRaidHistoriesRepository.save(bossRaidHistory);
+      throw new BadRequestException(
+        '보스 레이드 제한 시간이 지나 강제 종료 처리되었습니다.',
+      );
     }
 
     // Todo: 가져온 bossRaidHistory를 갱신한다.
