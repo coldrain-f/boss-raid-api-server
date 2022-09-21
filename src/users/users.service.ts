@@ -38,4 +38,13 @@ export class UsersService {
 
     return userEntity;
   }
+
+  /**
+   * 모든 유저 조회
+   */
+  async findAll(): Promise<User[]> {
+    return await this.usersRepository.find({
+      relations: ['bossRaidHistories'],
+    });
+  }
 }

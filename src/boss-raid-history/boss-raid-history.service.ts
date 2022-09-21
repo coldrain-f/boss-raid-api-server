@@ -12,6 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Cache } from 'cache-manager';
 import { BossRaidService } from 'src/boss-raid/boss-raid.service';
 import { RankService } from 'src/rank/rank.service';
+import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
 import { Repository } from 'typeorm';
 import { BossRaidHistory } from './entities/boss-raid-history.entity';
@@ -135,6 +136,8 @@ export class BossRaidHistoryService {
     );
 
     // Todo: Redis에서 랭킹 갱신
+    // Todo: 해당 사용자의 totalScore를 계산해서 redis에 집어넣는다.
+    await this.fetchRanking(userId);
   }
 
   async findOne(raidRecordId: number): Promise<BossRaidHistory> {
@@ -146,6 +149,21 @@ export class BossRaidHistoryService {
       throw new NotFoundException('보스 레이드 기록을 찾을 수 없습니다.');
     }
     return bossRaidHistory;
+  }
+
+  /**
+   * 특정 사용자의 랭킹을 갱신한다.
+   */
+  private async fetchRanking(userId: number) {
+    const user: User = await this.usersService.findOne(userId);
+    let totalScore = 0;
+
+    // 보스 레이드가 종료된 히스토리만 totalScore에 누적한다.
+    user.bossRaidHistories
+      .filter((history) => history.endTime)
+      .forEach((history) => (totalScore += history.score));
+
+    await this.rankService.fetchRanking(totalScore, userId);
   }
 
   /**
