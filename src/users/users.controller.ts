@@ -27,16 +27,16 @@ export class UsersController {
   async findOne(
     @Param('userId') userId: number,
   ): Promise<{ totalScore: number; bossRaidHistory: BossRaidHistory[] }> {
-    const findUser: User = await this.usersService.findOne(userId);
-
-    const bossRaidHistories: BossRaidHistory[] = findUser.bossRaidHistories;
-    // Todo: rankService에서 totalScore를 가지고 오도록 변경하기
+    const user: User = await this.usersService.findOne(userId);
     let totalScore = 0;
-    bossRaidHistories.forEach((history) => (totalScore += history.score));
+
+    user.bossRaidHistories
+      .filter((history) => history.enterTime)
+      .forEach((history) => (totalScore += history.score));
 
     return {
       totalScore,
-      bossRaidHistory: findUser.bossRaidHistories || [],
+      bossRaidHistory: user.bossRaidHistories || [],
     };
   }
 }
