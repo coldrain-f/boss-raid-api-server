@@ -51,7 +51,7 @@
 ##### 보스레이드 시작
 - 한 번에 한 명의 유저만 보스레이드 진행이 가능하다.
 
-  ( node-redlock을 사용하여 redis lock을 걸어서 동시성 고려하도록 구현)
+  ( node-redlock을 사용하여 redis lock을 걸어서 동시성 고려하도록 구현 )
 - 레이드 시작이 가능하다면 중복되지 않은 raidRecordId를 생성하여
 
   isEntered:true와 함께 응답
@@ -61,13 +61,17 @@
 - raidRecordId 종료 처리
 - 레이드 level에 따른 score 반영
 
-  (보스 레이드 staticData는 Redis에 캐싱하여 사용)
+  ( 보스 레이드 staticData는 Redis에 캐싱하여 사용 )
 - 저장된 userId와 raidRecordId가 일치하지 않는다면 예외 처리
 - 시작한 시간으로부터 레이드 제한시간이 지났다면 예외 처리
 
 ##### 랭킹 조회
 - 보스레이드 totalScore 내림차순으로 랭킹 조회
 - Redis에 캐싱하여 랭킹 기능 구현
+
+  ( Redis Sorted set 자료구조를 활용하여 랭킹 기능 구현 )
+- 탑 랭커 리스트 반환(1위부터 10위까지) 
+- 나의 랭킹 반환
 
 <br>
 
@@ -85,6 +89,7 @@ project/
 ├─ src/
 │  ├─ boss-raid/
 │  ├─ boss-raid-history
+│  ├─ rank
 │  ├─ common
 │  ├─ database
 │  ├─ users
