@@ -73,7 +73,6 @@ export class BossRaidHistoryService {
 
     const savedRaidRecord = await this.createBossRaidHistory(userId, level);
 
-    // Todo: Redis에서 canEnter와 enteredUserId를 갱신
     await this.cacheManager.set(
       'bossRaidStatus',
       { canEnter: false, enteredUserId: userId },
@@ -103,10 +102,10 @@ export class BossRaidHistoryService {
       throw new BadRequestException('이미 종료된 보스 레이드입니다.');
     }
 
-    // Todo: 시작한 시간으로부터 레이드 제한시간이 지났다면 예외 처리
+    // 시작한 시간으로부터 레이드 제한시간이 지났다면 예외 처리
     const isGameTimeout = await this.isGameTimeout(bossRaidHistory);
     if (isGameTimeout) {
-      // Todo: 어쨌든 다음 유저는 보스레이드를 시작할 수 있어야 하므로 레이드 상태변경을 한다.
+      // 어쨌든 다음 유저는 보스레이드를 시작할 수 있어야 하므로 레이드 상태변경을 한다.
       await this.cacheManager.set(
         'bossRaidStatus',
         { canEnter: true, enteredUserId: null },
@@ -119,7 +118,7 @@ export class BossRaidHistoryService {
       );
     }
 
-    // Todo: 가져온 bossRaidHistory를 갱신한다.
+    // 가져온 bossRaidHistory를 갱신한다.
     const score: number = await this.bossRaidService.getBossRaidScore(
       bossRaidHistory.level,
     );
@@ -128,7 +127,6 @@ export class BossRaidHistoryService {
 
     await this.bossRaidHistoriesRepository.save(bossRaidHistory);
 
-    // Todo: canEnter 값을 true로 변경하고 enteredUserId를 null로 변경한다.
     await this.cacheManager.set(
       'bossRaidStatus',
       { canEnter: true, enteredUserId: null },
@@ -136,7 +134,6 @@ export class BossRaidHistoryService {
     );
 
     // Todo: Redis에서 랭킹 갱신
-    // Todo: 해당 사용자의 totalScore를 계산해서 redis에 집어넣는다.
     await this.fetchRanking(userId);
   }
 

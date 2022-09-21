@@ -11,7 +11,6 @@ export class UsersService {
 
   /**
    * 유저 생성
-   * @returns 생성된 유저의 아이디 값(PK)
    */
   async signup(): Promise<{ userId: number }> {
     const userEntity: User = new User();
@@ -23,8 +22,6 @@ export class UsersService {
 
   /**
    * 유저 조회
-   * @param userId 조회하고자 하는 유저의 아이디 값(PK)
-   * @returns 조회한 사용자 Entity
    */
   async findOne(userId: number): Promise<User> {
     const userEntity: User = await this.usersRepository.findOne({
