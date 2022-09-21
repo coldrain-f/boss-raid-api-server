@@ -1,5 +1,5 @@
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import Redis from 'ioredis';
 import { BossRaidHistoryService } from 'src/boss-raid-history/boss-raid-history.service';
 import { BossRaidHistory } from 'src/boss-raid-history/entities/boss-raid-history.entity';
@@ -26,7 +26,7 @@ export class RankService {
   /**
    * 탑 랭킹 조회 (1등부터 10등까지)
    */
-  async getAllRanking(): Promise<RankingInfo[]> {
+  async getTopRankingList(): Promise<RankingInfo[]> {
     const ranking: string[] = await this.redis.zrevrange('rank', 0, 9);
     const rankingInfoList: RankingInfo[] = [];
 
@@ -45,7 +45,7 @@ export class RankService {
    */
   async getMyRanking(userId: number): Promise<RankingInfo> {
     const totalScore = parseInt(await this.redis.zscore('rank', userId));
-    const ranking = await this.redis.zrank('rank', userId.toString());
+    const ranking = await this.redis.zrevrank('rank', userId.toString());
     return { ranking, userId, totalScore };
   }
 }

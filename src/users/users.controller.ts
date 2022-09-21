@@ -30,6 +30,7 @@ export class UsersController {
     const findUser: User = await this.usersService.findOne(userId);
 
     const bossRaidHistories: BossRaidHistory[] = findUser.bossRaidHistories;
+    // Todo: rankService에서 totalScore를 가지고 오도록 변경하기
     let totalScore = 0;
     bossRaidHistories.forEach((history) => (totalScore += history.score));
 

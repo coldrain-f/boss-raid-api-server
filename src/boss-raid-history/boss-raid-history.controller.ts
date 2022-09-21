@@ -1,12 +1,22 @@
-import { Body, Controller, Get, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  ParseIntPipe,
+  Patch,
+  Post,
+} from '@nestjs/common';
+import { RankingInfo, RankService } from 'src/rank/rank.service';
 import { BossRaidHistoryService } from './boss-raid-history.service';
 import { EndBossRaidDTO } from './dto/end-boss-raid-dto';
 import { EnterBossRaidDTO } from './dto/enter-boss-raid-dto';
+import { RankBossRaidDTO } from './dto/rank-boss-raid.dto';
 
 @Controller('bossRaid')
 export class BossRaidHistoryController {
   constructor(
     private readonly bossRaidHistoryService: BossRaidHistoryService,
+    private readonly rankService: RankService,
   ) {}
 
   /**
@@ -39,5 +49,21 @@ export class BossRaidHistoryController {
   async endBossRaid(@Body() request: EndBossRaidDTO) {
     const { userId, raidRecordId } = request;
     return await this.bossRaidHistoryService.end(userId, raidRecordId);
+  }
+
+  /**
+   * 보스레이드 랭킹 조회
+   */
+  @Get('topRankerList')
+  async getTopRankerList(
+    @Body('userId', ParseIntPipe) userId: number,
+  ): Promise<RankBossRaidDTO> {
+    const topRankerInfoList: RankingInfo[] =
+      await this.rankService.getTopRankingList();
+    const myRankingInfo: RankingInfo = await this.rankService.getMyRanking(
+      userId,
+    );
+
+    return { topRankerInfoList, myRankingInfo };
   }
 }

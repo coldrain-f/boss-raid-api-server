@@ -1,4 +1,4 @@
-import { CacheModule, Module } from '@nestjs/common';
+import { CacheModule, forwardRef, Module } from '@nestjs/common';
 import { BossRaidHistoryService } from './boss-raid-history.service';
 import { BossRaidHistoryController } from './boss-raid-history.controller';
 import * as redisStore from 'cache-manager-ioredis';
@@ -32,7 +32,7 @@ import { RankModule } from 'src/rank/rank.module';
       port: 6379,
     }),
     TypeOrmModule.forFeature([BossRaidHistory]),
-    RankModule,
+    forwardRef(() => RankModule),
     HttpModule,
     UsersModule,
     BossRaidModule,

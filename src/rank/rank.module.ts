@@ -1,5 +1,5 @@
 import { RedisModule } from '@liaoliaots/nestjs-redis';
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { BossRaidHistoryModule } from 'src/boss-raid-history/boss-raid-history.module';
 import { UsersModule } from 'src/users/users.module';
 import { RankService } from './rank.service';
@@ -14,7 +14,7 @@ import { RankService } from './rank.service';
         port: 6379,
       },
     }),
-    BossRaidHistoryModule,
+    forwardRef(() => BossRaidHistoryModule),
     UsersModule,
   ],
   providers: [RankService],
