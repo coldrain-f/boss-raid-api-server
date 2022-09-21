@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -30,7 +31,7 @@ export class BossRaidHistoryService {
     private readonly redlock: RedlockService,
     private readonly bossRaidService: BossRaidService,
   ) {
-    // 앱이 로딩될 때 필요한 Redis 캐시 데이터 초기화
+    // 싱글톤 객체 생성 시 필요한 Redis 캐시 데이터 초기화
     this.initBossRaidCacheData();
   }
 
@@ -103,6 +104,7 @@ export class BossRaidHistoryService {
     // Todo: 시작한 시간으로부터 레이드 제한시간이 지났다면 예외 처리
     const isGameTimeout = await this.isGameTimeout(bossRaidHistory);
     if (isGameTimeout) {
+      // Todo: 어쨌든 다음 유저는 보스레이드를 시작할 수 있어야 하므로 레이드 상태변경을 한다.
       throw new BadRequestException('보스레이드 제한 시간이 경과되었습니다.');
     }
 
@@ -181,7 +183,7 @@ export class BossRaidHistoryService {
     const currentSeconds = this.toSeconds(new Date());
     const gameTotalSeconds = enterSeconds + bossRaidLimitSeconds;
 
-    if (gameTotalSeconds > currentSeconds) {
+    if (currentSeconds > gameTotalSeconds) {
       return true;
     }
     return false;
